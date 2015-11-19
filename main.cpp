@@ -5,9 +5,6 @@
 
 using namespace std;
 
-// Make type of command function pointer
-typedef void (*commandPointer)(std::vector<std::string> *);
-
 // Source: http://code.runnable.com/VHb0hWMZp-ws1gAr/splitting-a-string-into-a-vector-for-c%2B%2B
 vector<string> split(string str, char delimiter) {
   vector<string> internal;
@@ -22,15 +19,31 @@ vector<string> split(string str, char delimiter) {
 }
 
 
-void sayHello(std::vector<std::string> * params) {
+
+class Game {
+
+public:
+  void sayHello(std::vector<std::string> * params);
+  void sayBye(std::vector<std::string> * params);
+  void go(std::vector<std::string> * params);
+
+
+};
+
+
+// Make type of command function pointer
+typedef void (Game::*commandPointer)(std::vector<std::string> *);
+
+
+void Game::sayHello(std::vector<std::string> * params) {
   cout << "Dude ... HELLLLLLOOOOO ......" << endl;
 }
 
-void sayBye(std::vector<std::string> * params) {
+void Game::sayBye(std::vector<std::string> * params) {
   cout << "Dude ... BE GONEEEEE ......" << endl;
 }
 
-void go(std::vector<std::string> * params) {
+void Game::go(std::vector<std::string> * params) {
   if (params->size() >= 1) {
     cout << "Going to room " << (*params)[0] << endl;
   }
@@ -60,7 +73,7 @@ private:
     CommandParser();
     ~CommandParser();
     void registerCommand(std::string key, commandPointer function);
-    Command * listen(void);
+    Command * listen(Game * game);
 };
 
 CommandParser::CommandParser() {}
@@ -80,7 +93,7 @@ void CommandParser::registerCommand(std::string key, commandPointer function) {
   commands.push_back(cmd);
 }
 
-Command * CommandParser::listen(void) {
+Command * CommandParser::listen(Game * game) {
 
   std::string line;
   std::getline(std::cin, line);
@@ -98,7 +111,12 @@ Command * CommandParser::listen(void) {
   if (i < commands.size()) {
     cout << "Command found, You typed " << line << endl;
     params.erase(params.begin());   // Remove actual command
-    commands[i]->function(&params);
+
+
+    commandPointer ptr = commands[i]->function;
+
+    (*game.*ptr)(&params);
+    // (*this.*(commands[i]->function(&params));
   } else {
     cout << "Unknown command" << endl;
   }
@@ -111,12 +129,13 @@ Command * CommandParser::listen(void) {
 int main(void) {
 
   CommandParser parser;
+  Game game;
 
-  parser.registerCommand("sayhello", sayHello);
-  parser.registerCommand("saybye", sayBye);
-  parser.registerCommand("go", go);
+  parser.registerCommand("sayhello", &Game::sayHello);
+  parser.registerCommand("saybye", &Game::sayBye);
+  parser.registerCommand("go", &Game::go);
 
-  parser.listen();
+  parser.listen(&game);
 
   return 0;
 
